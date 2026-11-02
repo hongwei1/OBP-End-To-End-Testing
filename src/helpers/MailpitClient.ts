@@ -23,23 +23,27 @@ interface MailpitMessageDetail {
 
 export class MailpitClient {
   private baseUrl: string;
+  private seen = new Set<string>();
 
   constructor(baseUrl: string = env.MAILPIT_API_URL) {
     this.baseUrl = baseUrl;
   }
 
   async deleteAllMessages(): Promise<void> {
-    await fetch(`${this.baseUrl}/api/v1/messages`, { method: 'DELETE' });
+    // Compatibility hook: retain all mail; unique-recipient searches replace inbox deletion.
+    // Previously returned messages remain excluded, including across password-reset stages.
   }
 
   async searchMessages(query: string): Promise<MailpitSearchResponse> {
     const url = `${this.baseUrl}/api/v1/search?query=${encodeURIComponent(query)}`;
     const response = await fetch(url);
+    if (!response.ok) throw new Error(`Mailpit search failed: HTTP ${response.status}`);
     return response.json() as Promise<MailpitSearchResponse>;
   }
 
   async getMessage(id: string): Promise<MailpitMessageDetail> {
     const response = await fetch(`${this.baseUrl}/api/v1/message/${id}`);
+    if (!response.ok) throw new Error(`Mailpit message failed: HTTP ${response.status}`);
     return response.json() as Promise<MailpitMessageDetail>;
   }
 
@@ -47,17 +51,27 @@ export class MailpitClient {
     query: string,
     { timeoutMs = 30_000, pollIntervalMs = 1_000 } = {},
   ): Promise<MailpitMessageDetail> {
+    if (!/(?:^|\s)to:[^\s]+/.test(query)) throw new Error('Mailpit query must name a run-owned recipient');
     const deadline = Date.now() + timeoutMs;
 
     while (Date.now() < deadline) {
       const result = await this.searchMessages(query);
-      if (result.total > 0) {
-        return this.getMessage(result.messages[0].ID);
+      const next = (result.messages || []).find(message => !this.seen.has(message.ID));
+      if (next) {
+        const detail = await this.getMessage(next.ID);
+        this.seen.add(next.ID);
+        return detail;
       }
       await new Promise((r) => setTimeout(r, pollIntervalMs));
     }
 
     throw new Error(`Mailpit: no message matching "${query}" within ${timeoutMs}ms`);
+  }
+
+  extractOtp(body: string): string {
+    const codes = [...new Set(body.match(/(?<![0-9])[0-9]{6}(?![0-9])/g) || [])];
+    if (codes.length !== 1) throw new Error('Email must contain exactly one distinct six-digit OTP');
+    return codes[0];
   }
 
   extractValidationToken(messageBody: string): string {

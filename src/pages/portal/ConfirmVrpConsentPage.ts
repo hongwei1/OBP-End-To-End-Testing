@@ -1,5 +1,6 @@
 import { type Page, expect } from '@playwright/test';
 import { BasePage } from '../BasePage.js';
+import { MailpitClient } from '../../helpers/MailpitClient.js';
 import { env } from '../../config/env.js';
 
 export class ConfirmVrpConsentPage extends BasePage {
@@ -22,6 +23,13 @@ export class ConfirmVrpConsentPage extends BasePage {
   }
 
   async enterOtp(otp = env.TEST_OTP_VALUE) {
+    if (!otp) {
+      const query = process.env.OTP_MAILPIT_QUERY;
+      if (!query) throw new Error('Provide TEST_OTP_VALUE for an isolated fixed-OTP setup, or OTP_MAILPIT_QUERY for a run-owned mailbox');
+      const mailpit = new MailpitClient();
+      const message = await mailpit.waitForMessage(query);
+      otp = mailpit.extractOtp(message.Text || message.HTML);
+    }
     await this.otpInput.fill(otp);
   }
 

@@ -58,5 +58,5 @@ export const env = {
   MAILPIT_API_URL: optional('MAILPIT_API_URL', 'http://localhost:8025'),
 
   // OTP
-  TEST_OTP_VALUE: optional('TEST_OTP_VALUE', '123456'),
+  TEST_OTP_VALUE: optional('TEST_OTP_VALUE', ''),
 };

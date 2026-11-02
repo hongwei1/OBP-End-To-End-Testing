@@ -1,3 +1,5 @@
+import { observeMutations } from '../helpers/MutationLedger.js';
+import { allowedRequest } from '../config/safety.js';
 import { test as base } from '@playwright/test';
 import { VrpFormPage } from '../pages/hola/VrpFormPage.js';
 import { MainPage } from '../pages/hola/MainPage.js';
@@ -44,6 +46,23 @@ type TestFixtures = {
 };
 
 export const test = base.extend<TestFixtures>({
+  browser: async ({ browser }, use) => {
+    const original = browser.newContext.bind(browser);
+    const drains: Array<() => Promise<void>> = [];
+    browser.newContext = async (...args) => {
+      const context = await original(...args);
+      await context.route('**/*', async route => {
+        if (allowedRequest(route.request().url())) await route.continue();
+        else await route.abort('blockedbyclient');
+      });
+      drains.push(observeMutations(context));
+      return context;
+    };
+    try { await use(browser); } finally {
+      browser.newContext = original;
+      for (const drain of drains) await drain();
+    }
+  },
   vrpFormPage: async ({ page }, use) => {
     await use(new VrpFormPage(page));
   },

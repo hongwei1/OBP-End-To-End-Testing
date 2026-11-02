@@ -7,7 +7,7 @@ export class BasePage {
     await this.page.goto(url, { waitUntil: 'domcontentloaded' });
   }
 
-  async waitForUrlContaining(urlPart: string, timeout = 5_000) {
+  async waitForUrlContaining(urlPart: string, timeout = Number(process.env.PW_NAVIGATION_TIMEOUT_MS || 30_000)) {
     await this.page.waitForURL(`**/*${urlPart}*`, { timeout });
   }
 

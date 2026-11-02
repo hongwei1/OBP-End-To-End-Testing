@@ -25,12 +25,12 @@ export class OidcLoginPage extends BasePage {
   async login(
     username = env.OBP_LOGIN_USERNAME,
     password = env.OBP_LOGIN_PASSWORD,
-    credentialsProvider = env.OIDC_LOGIN_PROVIDER,
+    credentialsProvider = process.env.OBP_CREDENTIALS_PROVIDER || env.REGISTERED_USER_CREDENTIALS_PROVIDER,
   ) {
     await this.fillCredentials(username, password, credentialsProvider);
 
     await Promise.all([
-      this.page.waitForURL(url => !url.pathname.includes('/obp-oidc/auth'), { timeout: 5_000 }),
+      this.page.waitForURL(url => !url.pathname.includes('/obp-oidc/auth'), { timeout: Number(process.env.PW_NAVIGATION_TIMEOUT_MS || 30_000) }),
       this.signInButton.click(),
     ]);
   }
@@ -42,7 +42,7 @@ export class OidcLoginPage extends BasePage {
   async loginExpectingFailure(
     username: string,
     password: string,
-    credentialsProvider = env.OIDC_LOGIN_PROVIDER,
+    credentialsProvider = process.env.OBP_CREDENTIALS_PROVIDER || env.REGISTERED_USER_CREDENTIALS_PROVIDER,
   ): Promise<string> {
     await this.fillCredentials(username, password, credentialsProvider);
     await this.signInButton.click();
