@@ -42,8 +42,10 @@ export function validateRun(values: NodeJS.ProcessEnv = process.env): void {
   if (name === 'vrp' && !values.TEST_OTP_VALUE && !(values.MAILPIT_API_URL && /(?:^|\s)to:\S+/.test(values.OTP_MAILPIT_QUERY || ''))) {
     throw new Error('BLOCKED: configure an isolated fixed OTP or Mailpit and a run-owned recipient query');
   }
-  // A run must leave no data behind, so a group runs only once it declares how its data is removed.
-  if ((group as { cleanup?: string }).cleanup !== 'none') {
+  // A run must leave no data behind, so a group runs only once it declares how its data is removed
+  // ('none', or a routine the obp-server-k3s run wrapper performs through OBP endpoints).
+  const cleanup = (group as { cleanup?: string }).cleanup;
+  if (!cleanup || cleanup === 'missing') {
     throw new Error(`BLOCKED: group ${name} has no cleanup routine yet`);
   }
 }
