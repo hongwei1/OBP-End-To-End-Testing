@@ -15,10 +15,12 @@ export class MainPage extends BasePage {
     await this.waitForUrlContaining('/main');
   }
 
-  async verifyConsentAccepted() {
-    const url = new URL(this.page.url());
-    const status = url.searchParams.get('status');
-    expect(status).toBe('ACCEPTED');
+  // callbackUrl: the URL OBP-OIDC called Hola's /main with (consent_status, consent_id); Hola redirects from it
+  // to a plain /main, so the current URL no longer carries them.
+  async verifyConsentAccepted(callbackUrl?: string) {
+    const url = new URL(callbackUrl || this.page.url());
+    expect(url.searchParams.get('consent_status') || url.searchParams.get('status')).toBe('ACCEPTED');
+    if (callbackUrl) expect(url.searchParams.get('consent_id')).toBeTruthy();
   }
 
   async verifyConsentRequestIdPresent() {

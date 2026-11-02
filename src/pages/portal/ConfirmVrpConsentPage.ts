@@ -3,13 +3,15 @@ import { BasePage } from '../BasePage.js';
 import { MailpitClient } from '../../helpers/MailpitClient.js';
 import { env } from '../../config/env.js';
 
+// Portal's SCA page for a consent. After a correct OTP, Portal returns to OBP-OIDC, which calls Hola's
+// /main with consent_status and consent_id; Hola keeps the consent and redirects to a plain /main.
 export class ConfirmVrpConsentPage extends BasePage {
   private heading = this.page.locator('h1');
   private otpInput = this.page.locator('input#otp');
-  private confirmButton = this.page.locator('button', { hasText: 'Confirm' });
-  private successMessage = this.page.locator('text=Consent confirmed. Redirecting...');
+  private confirmButton = this.page.locator('button', { hasText: 'Verify' });
   private errorContainer = this.page.locator('.bg-error-500\\/10');
   private mailpit = new MailpitClient();
+  private holaCallback?: Promise<string>;
 
   constructor(page: Page) {
     super(page);
@@ -29,11 +31,11 @@ export class ConfirmVrpConsentPage extends BasePage {
   }
 
   async waitForPage() {
-    await this.waitForUrlContaining('/confirm-vrp-consent');
+    await this.waitForUrlContaining('/obp-consent-request-sca');
   }
 
   async verifyPageLoaded() {
-    await expect(this.heading).toContainText('Confirm VRP Consent');
+    await expect(this.heading).toContainText('Strong Customer Authentication');
   }
 
   async enterOtp(otp = env.TEST_OTP_VALUE) {
@@ -45,6 +47,11 @@ export class ConfirmVrpConsentPage extends BasePage {
   }
 
   async confirm() {
+    // The callback is a redirect, never a page of its own, so watch for the request before submitting.
+    this.holaCallback = this.page.waitForRequest(
+      request => /\/main(\.html)?\?/.test(request.url()) && new URL(request.url()).searchParams.has('consent_status'),
+      { timeout: 30_000 },
+    ).then(request => request.url());
     await this.confirmButton.click();
   }
 
@@ -53,8 +60,10 @@ export class ConfirmVrpConsentPage extends BasePage {
     await this.confirm();
   }
 
-  async verifySuccess() {
-    await expect(this.successMessage).toBeVisible({ timeout: 30_000 });
+  // The URL OBP-OIDC called Hola with after the OTP was accepted.
+  async verifySuccess(): Promise<string> {
+    if (!this.holaCallback) throw new Error('confirm() was not called');
+    return this.holaCallback;
   }
 
   async hasError(): Promise<boolean> {

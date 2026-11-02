@@ -44,19 +44,19 @@ test.describe('VRP Consent Flow', () => {
       await confirmVrpConsentRequestPage.confirmConsent();
     });
 
+    let holaCallback = '';
     await test.step('Enter OTP to finalise consent', async () => {
       await confirmVrpConsentPage.waitForPage();
       await confirmVrpConsentPage.verifyPageLoaded();
 
       await confirmVrpConsentPage.enterOtpAndConfirm();
-      await confirmVrpConsentPage.verifySuccess();
+      holaCallback = await confirmVrpConsentPage.verifySuccess();
     });
 
     await test.step('Verify redirect back to Hola with ACCEPTED status', async () => {
-      // Client-side redirect from Svelte $effect → window.location.href
+      // Portal → OBP-OIDC → Hola's /main?consent_status=…&consent_id=… → /main
       await mainPage.waitForMainPage();
-      await mainPage.verifyConsentAccepted();
-      await mainPage.verifyConsentRequestIdPresent();
+      await mainPage.verifyConsentAccepted(holaCallback);
     });
   });
 });
