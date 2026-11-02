@@ -20,10 +20,17 @@ test('group selection, target restrictions and write guards fail closed', () => 
     expect(allowedRequest(`https://${host}`)).toBe(false);
     expect(() => validateRun({ ...login, APIM_URL: `https://${host}` })).toThrow('forbidden');
   }
-  const writes = { OBP_E2E_GROUP: 'rate-limit', PORTAL_URL: 'http://localhost:5174' };
+  // vrp is still restricted to a disposable environment with loopback endpoints.
+  const writes = { OBP_E2E_GROUP: 'vrp', HOLA_URL: 'http://localhost:8082', PORTAL_URL: 'http://localhost:5174',
+                   OIDC_BASE: 'http://localhost:9000', LOGIN_USERNAME: 'synthetic_user', LOGIN_PASSWORD: 'fake-only',
+                   LOGIN_PROVIDER: 'http://localhost:8080', VRP_FROM_BANK_ROUTING_ADDRESS: 'bank',
+                   VRP_FROM_ROUTING_ADDRESS: 'from', VRP_TO_ROUTING_ADDRESS: 'to', TEST_OTP_VALUE: '123456' };
   expect(() => validateRun(writes)).toThrow('disposable');
-  expect(() => validateRun({ ...writes, OBP_ISOLATED_TEST_ENV: '1', OBP_ALLOW_TEST_WRITES: '1' })).toThrow('opt-in');
-  expect(() => validateRun({ ...writes, PORTAL_URL: 'https://sandbox.example.com', OBP_ISOLATED_TEST_ENV: '1', OBP_ALLOW_TEST_WRITES: '1', OBP_ALLOW_ABUSE_TESTS: '1' })).toThrow('isolated');
+  expect(() => validateRun({ ...writes, PORTAL_URL: 'https://sandbox.example.com', OBP_ISOLATED_TEST_ENV: '1', OBP_ALLOW_TEST_WRITES: '1' })).toThrow('isolated');
+  // rate-limit runs remotely but only with the explicit abuse opt-in.
+  const abuse = { OBP_E2E_GROUP: 'rate-limit', PORTAL_URL: 'https://portal.example.com' };
+  expect(() => validateRun(abuse)).toThrow('opt-in');
+  expect(() => validateRun({ ...abuse, OBP_ALLOW_ABUSE_TESTS: '1' })).not.toThrow();
   // Every guard satisfied, but the group cannot yet remove what it creates.
   const bank = { OBP_E2E_GROUP: 'vrp', HOLA_URL: 'http://localhost:8082', LOGIN_USERNAME: 'synthetic_user',
                  LOGIN_PASSWORD: 'fake-only', LOGIN_PROVIDER: 'http://localhost:8080', TEST_OTP_VALUE: '123456',
