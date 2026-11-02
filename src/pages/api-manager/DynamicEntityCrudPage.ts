@@ -20,9 +20,19 @@ export class DynamicEntityCrudPage extends BasePage {
   }
 
   async gotoFor(entityId: string) {
-    await this.navigateTo(`${env.API_MANAGER_BASE_URL}/dynamic-entities/system/${entityId}/crud`);
+    const url = `${env.API_MANAGER_BASE_URL}/dynamic-entities/system/${entityId}/crud`;
+    await this.navigateTo(url);
     // Wait for SvelteKit hydration so button clicks reach the JS handlers.
     await this.page.waitForLoadState('networkidle');
+    // OBP serves a new entity's record endpoints only once its cached definitions catch up (they answer 404 until
+    // then, for up to dynamicEntity.cache.ttl.seconds, 30 by default); reload until the records load, up to 45 s.
+    const unavailable = this.page.getByRole('heading', { name: 'Records Unavailable' });
+    const deadline = Date.now() + 45_000;
+    while ((await unavailable.isVisible()) && Date.now() < deadline) {
+      await this.page.waitForTimeout(5_000);
+      await this.navigateTo(url);
+      await this.page.waitForLoadState('networkidle');
+    }
   }
 
   async openCreateModal() {
