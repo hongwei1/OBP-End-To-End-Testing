@@ -16,14 +16,18 @@ export function validateRun(values: NodeJS.ProcessEnv = process.env): void {
   const name = values.OBP_E2E_GROUP;
   if (!name || !(name in groups)) throw new Error('BLOCKED: select one group through testing/e2e/run.py');
   const group = groups[name as keyof typeof groups];
-  if ((values.LOGIN_IDP || values.OIDC_LOGIN_PROVIDER || 'obp-oidc') !== 'obp-oidc') {
-    throw new Error('BLOCKED: imported suite supports OBP-OIDC only; use existing portal-login for Keycloak');
+  const idp = values.LOGIN_IDP || values.OIDC_LOGIN_PROVIDER || 'obp-oidc';
+  if (idp !== 'obp-oidc' && idp !== 'keycloak') {
+    throw new Error('BLOCKED: imported suite supports OBP-OIDC and Keycloak only');
+  }
+  if (idp === 'keycloak' && !(values.KEYCLOAK_BASE && values.KEYCLOAK_REALM)) {
+    throw new Error('BLOCKED: missing KEYCLOAK_BASE or KEYCLOAK_REALM for a Keycloak login');
   }
   for (const key of group.required) {
     if (!values[key]) throw new Error(`BLOCKED: missing ${key}`);
   }
-  for (const key of ['TARGET_BASE', 'API_BASE', 'APIM_URL', 'PORTAL_URL', 'HOLA_URL', 'OIDC_BASE', 'MAILPIT_API_URL',
-                     'API_MANAGER_BASE_URL', 'OBP_PORTAL_BASE_URL', 'HOLA_BASE_URL']) {
+  for (const key of ['TARGET_BASE', 'API_BASE', 'APIM_URL', 'PORTAL_URL', 'HOLA_URL', 'OIDC_BASE', 'KEYCLOAK_BASE',
+                     'MAILPIT_API_URL', 'API_MANAGER_BASE_URL', 'OBP_PORTAL_BASE_URL', 'HOLA_BASE_URL']) {
     const raw = values[key];
     if (!raw) continue;
     const url = new URL(raw);

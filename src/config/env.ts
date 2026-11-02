@@ -60,3 +60,12 @@ export const env = {
   // OTP
   TEST_OTP_VALUE: optional('TEST_OTP_VALUE', ''),
 };
+
+// What the login steps see of the IdP chosen by OIDC_LOGIN_PROVIDER: OBP-OIDC, or Keycloak (realm KEYCLOAK_REALM).
+const keycloak = env.OIDC_LOGIN_PROVIDER === 'keycloak';
+export const idp = {
+  // Every page of the IdP's login, including Keycloak's /login-actions/ page that answers a rejected password.
+  loginPage: keycloak ? new RegExp(`/realms/${optional('KEYCLOAK_REALM', '')}/`) : /\/obp-oidc\/auth/,
+  // The text of the IdP's error box after a rejected login (Keycloak: the obp theme's invalidUserMessage).
+  failedLoginText: keycloak ? 'Invalid username or password.' : 'Incorrect username/password',
+};

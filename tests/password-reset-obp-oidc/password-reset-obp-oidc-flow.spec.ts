@@ -1,5 +1,5 @@
 import { test, expect } from '../../src/fixtures/test-fixtures.js';
-import { env } from '../../src/config/env.js';
+import { env, idp } from '../../src/config/env.js';
 
 const PROVIDER = env.REGISTERED_USER_CREDENTIALS_PROVIDER;
 
@@ -121,7 +121,7 @@ test.describe('Password Reset Flow (OBP-OIDC)', () => {
       await portalLoginPage.goto();
       await oidcLoginPage.waitForLoginPage();
       const error = await oidcLoginPage.loginExpectingFailure(user.username, user.password, PROVIDER);
-      expect(error).toContain('Incorrect username/password');
+      expect(error).toContain(idp.failedLoginText);
     });
   });
 });

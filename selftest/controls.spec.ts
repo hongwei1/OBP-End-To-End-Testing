@@ -14,7 +14,11 @@ const login = { OBP_E2E_GROUP: 'login', APIM_URL: 'https://manager.example.com',
 test('group selection, target restrictions and write guards fail closed', () => {
   expect(() => validateRun({})).toThrow('select one group');
   expect(() => validateRun(login)).not.toThrow();
-  expect(() => validateRun({ ...login, LOGIN_IDP: 'keycloak' })).toThrow('OBP-OIDC only');
+  const keycloak = { ...login, LOGIN_IDP: 'keycloak', KEYCLOAK_BASE: 'https://kc.example.com', KEYCLOAK_REALM: 'test' };
+  expect(() => validateRun(keycloak)).not.toThrow();
+  expect(() => validateRun({ ...keycloak, KEYCLOAK_REALM: '' })).toThrow('KEYCLOAK_REALM');
+  expect(() => validateRun({ ...keycloak, KEYCLOAK_BASE: 'https://ec2admin' })).toThrow('forbidden');
+  expect(() => validateRun({ ...login, LOGIN_IDP: 'google' })).toThrow('OBP-OIDC and Keycloak only');
   for (const host of ['ec2admin', '10.0.3.183', '10.0.3.146', '95.128.185.73', 'api.ttk.com.mk']) {
     // Pure URL classification; these hosts are never contacted.
     expect(allowedRequest(`https://${host}`)).toBe(false);

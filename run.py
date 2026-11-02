@@ -63,8 +63,10 @@ def prepare(group, values):
         env['OBP_CREDENTIALS_PROVIDER'] = env['LOGIN_PROVIDER']
     runner.validate_urls(env)
     missing = [key for key in GROUPS[group]['required'] if not env.get(key)]
-    if env['OIDC_LOGIN_PROVIDER'] != 'obp-oidc':
-        missing.append('imported suite supports OBP-OIDC only; use portal-login for Keycloak')
+    if env['OIDC_LOGIN_PROVIDER'] not in ('obp-oidc', 'keycloak'):
+        missing.append('imported suite supports OBP-OIDC and Keycloak only')
+    if env['OIDC_LOGIN_PROVIDER'] == 'keycloak' and not (env.get('KEYCLOAK_BASE') and env.get('KEYCLOAK_REALM')):
+        missing.append('KEYCLOAK_BASE and KEYCLOAK_REALM for a Keycloak login')
     if GROUPS[group]['scope'] == 'isolated':
         if env.get('OBP_ISOLATED_TEST_ENV') != '1' or env.get('OBP_ALLOW_TEST_WRITES') != '1':
             missing.append('disposable environment and OBP_ALLOW_TEST_WRITES=1; cleanup not automated')

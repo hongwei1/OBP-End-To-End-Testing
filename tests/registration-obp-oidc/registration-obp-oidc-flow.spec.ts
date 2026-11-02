@@ -1,5 +1,5 @@
 import { test, expect } from '../../src/fixtures/test-fixtures.js';
-import { env } from '../../src/config/env.js';
+import { env, idp } from '../../src/config/env.js';
 import { ApiManagerLoginPage } from '../../src/pages/api-manager/ApiManagerLoginPage.js';
 import { OidcLoginPage } from '../../src/pages/obp-oidc/OidcLoginPage.js';
 import { ProfilePage } from '../../src/pages/api-manager/ProfilePage.js';
@@ -76,7 +76,7 @@ test.describe('Registration and Login Flow (OBP-OIDC)', () => {
       await portalLoginPage.goto();
       await oidcLoginPage.waitForLoginPage();
       const error = await oidcLoginPage.loginExpectingFailure(user.username, user.password, PROVIDER);
-      expect(error).toContain('Incorrect username/password');
+      expect(error).toContain(idp.failedLoginText);
     });
   });
 
@@ -110,7 +110,7 @@ test.describe('Registration and Login Flow (OBP-OIDC)', () => {
       await portalLoginPage.goto();
       await oidcLoginPage.waitForLoginPage();
       const error = await oidcLoginPage.loginExpectingFailure(user.username, 'WrongPassword!999', PROVIDER);
-      expect(error).toContain('Incorrect username/password');
+      expect(error).toContain(idp.failedLoginText);
     });
   });
 

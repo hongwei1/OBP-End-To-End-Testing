@@ -1,5 +1,5 @@
 import { test, expect } from '../../src/fixtures/test-fixtures.js';
-import { env } from '../../src/config/env.js';
+import { env, idp } from '../../src/config/env.js';
 
 test.describe('Login Flow (OBP-OIDC)', () => {
   test('Powerful User 1 can log in to API Manager via OBP-OIDC', async ({
@@ -32,9 +32,9 @@ test.describe('Login Flow (OBP-OIDC)', () => {
       console.log(`After submitting credentials. URL is now: ${page.url()}`);
     });
 
-    await test.step('Verify redirect away from OBP-OIDC auth page', async () => {
-      console.log('Before verifying redirect away from OBP-OIDC auth page');
-      await expect(page).not.toHaveURL(/\/obp-oidc\/auth/);
+    await test.step('Verify redirect away from the IdP login page', async () => {
+      console.log('Before verifying redirect away from the IdP login page');
+      await expect(page).not.toHaveURL(idp.loginPage);
       expect(page.url()).toContain(env.API_MANAGER_BASE_URL);
       console.log('After verifying redirect. Logged in successfully');
     });
