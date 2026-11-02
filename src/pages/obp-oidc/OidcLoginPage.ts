@@ -15,6 +15,16 @@ export class OidcLoginPage extends BasePage {
   }
 
   async waitForLoginPage() {
+    // Portal redirects straight to OBP-OIDC only when it offers a single provider. With more than one (OBP-OIDC
+    // and Keycloak on k3s) it shows a choice instead: pick OBP-OIDC there.
+    // The redirect is given 5 s first, so a page still navigating away from a link just clicked is not clicked again.
+    const redirected = await this.page.waitForURL(/\/obp-oidc\/auth/, { timeout: 5_000 }).then(() => true, () => false);
+    if (!redirected) {
+      const choice = this.page.locator(`a[href="/login/${process.env.OIDC_LOGIN_PROVIDER || 'obp-oidc'}"]`).first();
+      if (await choice.isVisible()) {
+        await choice.click();
+      }
+    }
     await this.waitForUrlContaining('/obp-oidc/auth');
   }
 
