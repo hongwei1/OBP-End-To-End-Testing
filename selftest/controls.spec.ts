@@ -25,7 +25,9 @@ test('group selection, target restrictions and write guards fail closed', () => 
   expect(() => validateRun({ ...writes, OBP_ISOLATED_TEST_ENV: '1', OBP_ALLOW_TEST_WRITES: '1' })).toThrow('opt-in');
   expect(() => validateRun({ ...writes, PORTAL_URL: 'https://sandbox.example.com', OBP_ISOLATED_TEST_ENV: '1', OBP_ALLOW_TEST_WRITES: '1', OBP_ALLOW_ABUSE_TESTS: '1' })).toThrow('isolated');
   // Every guard satisfied, but the group cannot yet remove what it creates.
-  const bank = { OBP_E2E_GROUP: 'dynamic-entity', APIM_URL: 'http://localhost:3003', OIDC_BASE: 'http://localhost:9000',
+  const bank = { OBP_E2E_GROUP: 'entitlements', APIM_URL: 'http://localhost:3003', OIDC_BASE: 'http://localhost:9000',
+                 PORTAL_URL: 'http://localhost:5174', MAILPIT_API_URL: 'http://localhost:8025',
+                 REGISTERED_USER_CREDENTIALS_PROVIDER: 'http://localhost:8080',
                  POWERFUL_USER_1_USERNAME: 'synthetic_user', POWERFUL_USER_1_PASSWORD: 'fake-only',
                  POWERFUL_USER_1_CREDENTIALS_PROVIDER: 'http://localhost:8080',
                  OBP_ISOLATED_TEST_ENV: '1', OBP_ALLOW_TEST_WRITES: '1' };
