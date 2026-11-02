@@ -33,7 +33,9 @@ def validate_urls(env):
             raise ValueError(f'Forbidden host in {key}')
         if parts.scheme not in ('http', 'https') or not host or parts.username or parts.password:
             raise ValueError(f'Invalid URL in {key}')
-        if parts.scheme == 'http' and host not in {'localhost', '127.0.0.1', '::1'} and not host.endswith('.obp.local'):
+        in_cluster_mailpit = key == 'MAILPIT_API_URL' and host.endswith('.svc.cluster.local')
+        if parts.scheme == 'http' and host not in {'localhost', '127.0.0.1', '::1'} and not host.endswith('.obp.local') \
+                and not in_cluster_mailpit:
             raise ValueError(f'Remote {key} must use HTTPS')
 
 
@@ -47,7 +49,7 @@ def prepare(group, values):
         if env.get(source):
             env[target] = env[source]
     # The remote groups act as the ordinary test user, which gets the roles a group needs only for its run.
-    if group in ('login', 'create-bank', 'dynamic-entity'):
+    if group in ('login', 'create-bank', 'dynamic-entity', 'entitlements'):
         for key, source in {'POWERFUL_USER_1_USERNAME': 'LOGIN_USERNAME', 'POWERFUL_USER_1_PASSWORD': 'LOGIN_PASSWORD',
                             'POWERFUL_USER_1_CREDENTIALS_PROVIDER': 'LOGIN_PROVIDER'}.items():
             if env.get(source):

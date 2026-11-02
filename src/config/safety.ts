@@ -30,7 +30,9 @@ export function validateRun(values: NodeJS.ProcessEnv = process.env): void {
     if (blocked.has(url.hostname.toLowerCase()) || url.hostname.toLowerCase().includes('ttk') || url.username || url.password) {
       throw new Error(`BLOCKED: forbidden endpoint in ${key}`);
     }
-    if (!['https:', 'http:'].includes(url.protocol) || (url.protocol === 'http:' && !loopback.has(url.hostname))) {
+    // Plain HTTP only on loopback, and for the in-cluster Mailpit API (Kubernetes service names have no certificate).
+    const inClusterMailpit = key === 'MAILPIT_API_URL' && url.hostname.endsWith('.svc.cluster.local');
+    if (!['https:', 'http:'].includes(url.protocol) || (url.protocol === 'http:' && !loopback.has(url.hostname) && !inClusterMailpit)) {
       throw new Error(`BLOCKED: insecure endpoint in ${key}`);
     }
     if (group.scope === 'isolated' && !loopback.has(url.hostname)) throw new Error(`BLOCKED: isolated endpoint required in ${key}`);
