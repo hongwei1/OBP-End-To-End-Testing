@@ -16,8 +16,9 @@ function generateUniqueUser() {
   };
 }
 
+// OBP accepts a BANK_ID of at most 16 characters (APIUtil.checkShortString), so the suffix is 6 base-36 characters.
 function generateUniqueBankId() {
-  const suffix = `${Date.now()}${Math.random().toString(36).slice(2, 7)}`;
+  const suffix = Math.floor(Math.random() * 36 ** 6).toString(36).padStart(6, '0');
   return `test-bank-${suffix}`;
 }
 

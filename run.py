@@ -49,7 +49,7 @@ def prepare(group, values):
         if env.get(source):
             env[target] = env[source]
     # The remote groups act as the ordinary test user, which gets the roles a group needs only for its run.
-    if group in ('login', 'create-bank', 'dynamic-entity', 'entitlements'):
+    if group in ('login', 'create-bank', 'dynamic-entity', 'entitlements', 'registration', 'create-bank-new-user'):
         for key, source in {'POWERFUL_USER_1_USERNAME': 'LOGIN_USERNAME', 'POWERFUL_USER_1_PASSWORD': 'LOGIN_PASSWORD',
                             'POWERFUL_USER_1_CREDENTIALS_PROVIDER': 'LOGIN_PROVIDER'}.items():
             if env.get(source):
