@@ -11,11 +11,20 @@ export class DynamicEntitiesListPage extends BasePage {
     await this.navigateTo(`${env.API_MANAGER_BASE_URL}/dynamic-entities/system`);
   }
 
-  /** Resolve a dynamic entity's id from its name link on the list page. */
+  /**
+   * Resolve a dynamic entity's id from its name link on the list page. OBP caches the entity list for
+   * dynamicEntity.cache.ttl.seconds (default 30), so a new entity can be missing at first: reload the list until it
+   * appears, for up to 45 seconds.
+   */
   async entityIdForName(entityName: string): Promise<string> {
     const link = this.page.locator('a[href^="/dynamic-entities/system/"]', {
       hasText: entityName,
     });
+    const deadline = Date.now() + 45_000;
+    while (!(await link.first().isVisible()) && Date.now() < deadline) {
+      await this.page.waitForTimeout(5_000);
+      await this.goto();
+    }
     const href = await link.first().getAttribute('href');
     if (!href) {
       throw new Error(`No entity link found for "${entityName}"`);
