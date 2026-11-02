@@ -3,8 +3,9 @@ import { BasePage } from '../BasePage.js';
 import { MailpitClient } from '../../helpers/MailpitClient.js';
 import { env } from '../../config/env.js';
 
-// Portal's SCA page for a consent. After a correct OTP, Portal returns to OBP-OIDC, which calls Hola's
-// /main with consent_status and consent_id; Hola keeps the consent and redirects to a plain /main.
+// Portal's SCA page for a consent. After a correct OTP, Portal returns to OBP-OIDC, which reads the consent back
+// from OBP-API and calls Hola's /main(.html): with an authorization code (OBP-OIDC verified the ACCEPTED consent),
+// with consent_status and consent_id, or with error; Hola then redirects to a plain /main.
 export class ConfirmVrpConsentPage extends BasePage {
   private heading = this.page.locator('h1');
   private otpInput = this.page.locator('input#otp');
@@ -56,10 +57,11 @@ export class ConfirmVrpConsentPage extends BasePage {
 
   async confirm() {
     // The callback is a redirect, never a page of its own, so watch for the request before submitting.
-    this.holaCallback = this.page.waitForRequest(
-      request => /\/main(\.html)?\?/.test(request.url()) && new URL(request.url()).searchParams.has('consent_status'),
-      { timeout: 30_000 },
-    ).then(request => request.url());
+    this.holaCallback = this.page.waitForRequest(request => {
+      if (!/\/main(\.html)?\?/.test(request.url())) return false;
+      const params = new URL(request.url()).searchParams;
+      return ['code', 'consent_status', 'error'].some(name => params.has(name));
+    }, { timeout: 30_000 }).then(request => request.url());
     await this.confirmButton.click();
   }
 
