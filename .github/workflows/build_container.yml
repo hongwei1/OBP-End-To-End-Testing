@@ -1,0 +1,61 @@
+name: Build and publish container
+
+# Builds the test runner image used by the obp-server-k3s Jobs and checks it offline. It is pushed to Docker Hub only
+# when the repository variable DOCKER_HUB_ORGANIZATION and the secrets DOCKER_HUB_USERNAME / DOCKER_HUB_TOKEN are set.
+on:
+  push:
+    branches: [obp-tests-image]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: obp-e2e-tests
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build linux/amd64
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: ${{ env.IMAGE_NAME }}:ci
+
+      # Same constraints as the Job: non-root, read-only root file system, only /tmp writable. No network traffic.
+      - name: Offline checks inside the image
+        run: |
+          docker run --rm --read-only --tmpfs /tmp --user 12345 --network none ${IMAGE_NAME}:ci --selftest
+          docker run --rm --read-only --tmpfs /tmp --user 12345 --network none ${IMAGE_NAME}:ci login --list
+
+      - name: Log in to Docker Hub
+        if: ${{ vars.DOCKER_HUB_ORGANIZATION != '' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Push
+        id: push
+        if: ${{ vars.DOCKER_HUB_ORGANIZATION != '' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: |
+            docker.io/${{ vars.DOCKER_HUB_ORGANIZATION }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            docker.io/${{ vars.DOCKER_HUB_ORGANIZATION }}/${{ env.IMAGE_NAME }}:obp-tests-image
+
+      - name: Record the digest
+        if: ${{ steps.push.outcome == 'success' }}
+        run: |
+          echo "docker.io/${{ vars.DOCKER_HUB_ORGANIZATION }}/${IMAGE_NAME}@${{ steps.push.outputs.digest }}" >> "$GITHUB_STEP_SUMMARY"
