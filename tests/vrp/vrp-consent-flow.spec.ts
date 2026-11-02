@@ -39,6 +39,8 @@ test.describe('VRP Consent Flow', () => {
       const hasError = await confirmVrpConsentRequestPage.hasError();
       expect(hasError).toBe(false);
 
+      // Confirming creates the consent and sends its OTP; older challenges in the mailbox must not be picked up.
+      await confirmVrpConsentPage.ignoreEarlierOtpMail();
       await confirmVrpConsentRequestPage.confirmConsent();
     });
 

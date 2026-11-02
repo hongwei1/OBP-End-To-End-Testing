@@ -47,6 +47,13 @@ export class MailpitClient {
     return response.json() as Promise<MailpitMessageDetail>;
   }
 
+  // Treat every message the query matches now as already returned, so a later waitForMessage only returns mail
+  // that arrives afterwards (a recipient that is not unique to the run may already have older mail).
+  async ignoreExisting(query: string): Promise<void> {
+    if (!/(?:^|\s)to:[^\s]+/.test(query)) throw new Error('Mailpit query must name a run-owned recipient');
+    for (const message of (await this.searchMessages(query)).messages || []) this.seen.add(message.ID);
+  }
+
   async waitForMessage(
     query: string,
     { timeoutMs = 30_000, pollIntervalMs = 1_000 } = {},

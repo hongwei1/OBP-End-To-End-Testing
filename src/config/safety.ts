@@ -12,10 +12,21 @@ export function allowedRequest(raw: string): boolean {
   } catch { return false; }
 }
 
+export interface GroupDefinition {
+  scope: string;
+  mutation: string;
+  required: string[];
+  cleanup?: string;
+}
+
 export function validateRun(values: NodeJS.ProcessEnv = process.env): void {
   const name = values.OBP_E2E_GROUP;
   if (!name || !(name in groups)) throw new Error('BLOCKED: select one group through testing/e2e/run.py');
-  const group = groups[name as keyof typeof groups];
+  validateGroup(name, groups[name as keyof typeof groups], values);
+}
+
+// Separate from validateRun so the controls can check the guards against group definitions no real group has.
+export function validateGroup(name: string, group: GroupDefinition, values: NodeJS.ProcessEnv): void {
   const idp = values.LOGIN_IDP || values.OIDC_LOGIN_PROVIDER || 'obp-oidc';
   if (idp !== 'obp-oidc' && idp !== 'keycloak') {
     throw new Error('BLOCKED: imported suite supports OBP-OIDC and Keycloak only');
@@ -50,7 +61,7 @@ export function validateRun(values: NodeJS.ProcessEnv = process.env): void {
   }
   // A run must leave no data behind, so a group runs only once it declares how its data is removed
   // ('none', or a routine the obp-server-k3s run wrapper performs through OBP endpoints).
-  const cleanup = (group as { cleanup?: string }).cleanup;
+  const cleanup = group.cleanup;
   if (!cleanup || cleanup === 'missing') {
     throw new Error(`BLOCKED: group ${name} has no cleanup routine yet`);
   }
