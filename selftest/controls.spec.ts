@@ -2,7 +2,8 @@ import { EventEmitter } from 'node:events';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import type { BrowserContext } from '@playwright/test';
+import type { BrowserContext, Page } from '@playwright/test';
+import { ConfirmVrpConsentPage } from '../src/pages/portal/ConfirmVrpConsentPage.js';
 import { observeMutations } from '../src/helpers/MutationLedger.js';
 import { test, expect } from '@playwright/test';
 import { MailpitClient } from '../src/helpers/MailpitClient.js';
@@ -96,6 +97,13 @@ test('Mailpit skips the mail a shared mailbox already holds', async () => {
     expect((await mail.waitForMessage('to:tester@example.org', { pollIntervalMs: 10 })).ID).toBe('this-run');
     await expect(mail.ignoreExisting('subject:any')).rejects.toThrow('run-owned recipient');
   } finally { globalThis.fetch = saved; }
+});
+
+test('the consent challenge code is read from OBP\'s challenge mail', () => {
+  const page = { locator: () => ({}), getByRole: () => ({}) } as unknown as Page;
+  const sca = new ConfirmVrpConsentPage(page);
+  expect(sca.challengeCode('Your consent challenge : 12345678, Application: Hola 2 for 123456')).toBe('12345678');
+  expect(() => sca.challengeCode('You have been granted the role: CanGetAnyUser_123456')).toThrow('no consent challenge');
 });
 
 test('Mailpit HTTP errors are detected rather than treated as empty mail', async () => {

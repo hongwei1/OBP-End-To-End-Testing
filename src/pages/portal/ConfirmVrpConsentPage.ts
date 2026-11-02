@@ -25,6 +25,14 @@ export class ConfirmVrpConsentPage extends BasePage {
     return query.split('{LOGIN_USERNAME}').join(env.OBP_LOGIN_USERNAME);
   }
 
+  // OBP's consent challenge mail reads "Your consent challenge : <code>, Application: ..."; the code is 8 digits
+  // today, not the six the registration mails use, and the application name may contain digits of its own.
+  challengeCode(body: string): string {
+    const match = body.match(/consent challenge\s*:\s*([0-9]{4,12})\b/i);
+    if (!match) throw new Error('Mail holds no consent challenge code');
+    return match[1];
+  }
+
   // Call before the consent is created: the test user's mailbox keeps the challenges of earlier runs.
   async ignoreEarlierOtpMail() {
     if (!env.TEST_OTP_VALUE) await this.mailpit.ignoreExisting(this.otpQuery());
@@ -41,7 +49,7 @@ export class ConfirmVrpConsentPage extends BasePage {
   async enterOtp(otp = env.TEST_OTP_VALUE) {
     if (!otp) {
       const message = await this.mailpit.waitForMessage(this.otpQuery());
-      otp = this.mailpit.extractOtp(message.Text || message.HTML);
+      otp = this.challengeCode(message.Text || message.HTML);
     }
     await this.otpInput.fill(otp);
   }
