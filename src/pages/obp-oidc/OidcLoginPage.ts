@@ -2,15 +2,15 @@ import { type Page } from '@playwright/test';
 import { BasePage } from '../BasePage.js';
 import { env, idp } from '../../config/env.js';
 
-/** The login page of the selected IdP: OBP-OIDC's, or Keycloak's obp theme, which uses the same field ids. */
+/** The login page of the selected IdP: OBP-OIDC's, or Keycloak's, which uses the same field ids. */
 export class OidcLoginPage extends BasePage {
   private usernameInput = this.page.locator('#username');
   private passwordInput = this.page.locator('#password');
   private providerSelect = this.page.locator('#provider');
   private providerHidden = this.page.locator('input[name="provider"][type="hidden"]');
   private signInButton = this.page.locator('button[type="submit"]');
-  // OBP-OIDC's error box, or the obp Keycloak theme's message under the fields.
-  private errorMessage = this.page.locator('.error, .obp-error-message').first();
+  // OBP-OIDC's error box, or Keycloak's message under the fields (default theme, or the OBP theme).
+  private errorMessage = this.page.locator('.error, #input-error, .obp-error-message').first();
 
   constructor(page: Page) {
     super(page);
