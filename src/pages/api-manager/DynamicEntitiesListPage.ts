@@ -29,7 +29,9 @@ export class DynamicEntitiesListPage extends BasePage {
     if (!href) {
       throw new Error(`No entity link found for "${entityName}"`);
     }
-    const id = href.split('/').pop();
+    // API Manager links an entity as /dynamic-entities/system/{id}?bank_id=SYS since its November 2026 build;
+    // the id is the path's last segment, without the query.
+    const id = new URL(href, 'http://api-manager.invalid').pathname.split('/').pop();
     if (!id) {
       throw new Error(`Could not extract entity id from href "${href}"`);
     }
